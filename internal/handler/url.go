@@ -48,6 +48,21 @@ func (h *URLHandler) Redirect(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "URL not found"})
 		return
 	}
+	// Log analytics details: get client IP and user-agent from the request.
+	ip := c.ClientIP()
+	userAgent := c.GetHeader("User-Agent")
+	h.urlService.LogAnalytics(shortCode, ip, userAgent)
 	// Redirect to the original URL
 	c.Redirect(http.StatusFound, originalURL)
+}
+
+func (h *URLHandler) GetAnalytics(c *gin.Context) {
+	code := c.Param("code")
+	logs, err := h.urlService.GetAnalytics(code)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Analytics not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, logs)
 }

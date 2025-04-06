@@ -5,17 +5,20 @@ import (
 	"math/rand"
 	"sync"
 	"time"
+
+	"github.com/work-kumar-rajesh/go-url-shortner/internal/model"
 )
 
-// URLService is an in-memory implementation of the URLService interface.
 type URLService struct {
-	store map[string]string
-	mutex sync.RWMutex
+	store     map[string]string
+	analytics map[string][]model.AnalyticsLog // key is short code
+	mutex     sync.RWMutex
 }
 
 func NewURLService() *URLService {
 	return &URLService{
-		store: make(map[string]string),
+		store:     make(map[string]string),
+		analytics: make(map[string][]model.AnalyticsLog),
 	}
 }
 
@@ -29,6 +32,18 @@ func (s *URLService) ShortenURL(originalURL string) (string, error) {
 	return code, nil
 }
 
+// generateCode creates a random alphanumeric string.
+func generateCode(length int) string {
+	charset := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	random := rand.New(rand.NewSource(time.Now().UnixNano()))
+
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = charset[random.Intn(len(charset))]
+	}
+	return string(b)
+}
+
 func (s *URLService) ResolveURL(code string) (string, error) {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
@@ -40,14 +55,27 @@ func (s *URLService) ResolveURL(code string) (string, error) {
 	return url, nil
 }
 
-// generateCode creates a random alphanumeric string of a given length.
-func generateCode(length int) string {
-	charset := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-	random := rand.New(rand.NewSource(time.Now().UnixNano()))
+// LogAnalytics records a redirect event.
+func (s *URLService) LogAnalytics(code, ip, userAgent string) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
 
-	b := make([]byte, length)
-	for i := range b {
-		b[i] = charset[random.Intn(len(charset))]
+	logEntry := model.AnalyticsLog{
+		ShortCode: code,
+		Timestamp: time.Now(),
+		IP:        ip,
+		UserAgent: userAgent,
 	}
-	return string(b)
+	s.analytics[code] = append(s.analytics[code], logEntry)
+}
+
+func (s *URLService) GetAnalytics(code string) ([]model.AnalyticsLog, error) {
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+
+	logs, exists := s.analytics[code]
+	if !exists {
+		return nil, errors.New("no analytics found for this short code")
+	}
+	return logs, nil
 }
