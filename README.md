@@ -20,7 +20,7 @@ The project is organized as follows:
 | `├── Dockerfile`           | Docker configuration for containerization        |
 | `├── go.mod`               | Go module file                                  |
 | `├── go.sum`               | Go module checksum file                         |
-| `└── README.md`            | Project documentation (this file)                |
+| `└── README.md`            | Project documentation (Readme.md file)                |
 
 ## Description
 
