@@ -12,9 +12,8 @@ import (
 type RateLimiter struct {
 	limiters map[string]*rate.Limiter
 	mutex    sync.Mutex
-	// Customize these values as needed.
-	r rate.Limit
-	b int
+	r        rate.Limit
+	b        int
 }
 
 func NewRateLimiter(r rate.Limit, b int) *RateLimiter {
